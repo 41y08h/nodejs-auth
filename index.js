@@ -9,7 +9,23 @@ const UserSchema = Joi.object({
   password: Joi.string().min(6).max(30).required().label("Password"),
 });
 
-const users = [];
+const users = [
+  {
+    id: 1,
+    username: "admin",
+    password: "password",
+  },
+  {
+    id: 2,
+    username: "user",
+    password: "password",
+  },
+  {
+    id: 3,
+    username: "guest",
+    password: "password",
+  },
+];
 
 const app = express();
 app.use(express.json());
@@ -19,7 +35,13 @@ app.post("/register", (req, res) => {
 
   // Validate the user input
   const { error } = UserSchema.validate({ username, password });
-  if (error) return res.status(400).send(error.message);
+  if (error)
+    return res.status(400).send({
+      error: {
+        message: error.message,
+        code: 400,
+      },
+    });
 
   // Check if the user already exists
   const user = users.find((u) => u.username === username);
@@ -54,7 +76,13 @@ app.post("/login", (req, res) => {
 
   // Validate the user input
   const { error } = UserSchema.validate({ username, password });
-  if (error) return res.status(400).send(error.message);
+  if (error)
+    return res.status(400).send({
+      error: {
+        message: error.message,
+        code: 400,
+      },
+    });
 
   // Check if the user exists
   const user = users.find((u) => u.username === username);
@@ -84,6 +112,48 @@ app.post("/login", (req, res) => {
 
   // Send the token
   res.status(200).send({ token });
+});
+
+app.get("/current-user", (req, res) => {
+  const { authorization } = req.headers;
+  if (!authorization) {
+    return res.status(401).send({
+      error: {
+        message: "Unauthorized",
+        code: 401,
+      },
+    });
+  }
+
+  // Verify the token
+  const token = authorization.replace("Bearer ", "");
+  try {
+    const { username } = jwt.verify(token, __JWT_SECRET__);
+    const user = users.find((u) => u.username === username);
+    if (!user) {
+      return res.status(401).send({
+        error: {
+          message: "Unauthorized",
+          code: 401,
+        },
+      });
+    }
+
+    // Send the user
+    res.status(200).send({
+      user: {
+        id: user.id,
+        username: user.username,
+      },
+    });
+  } catch (err) {
+    return res.status(401).send({
+      error: {
+        message: "Unauthorized",
+        code: 401,
+      },
+    });
+  }
 });
 
 app.listen(5000, () => {
