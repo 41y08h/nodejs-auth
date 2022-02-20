@@ -41,12 +41,49 @@ app.post("/register", (req, res) => {
   users.push(newUser);
 
   // Generate a token
-  const token = jwt.sign({ username: newUser.username }, __JWT_SECRET__);
+  const token = jwt.sign({ username: newUser.username }, __JWT_SECRET__, {
+    expiresIn: "7d",
+  });
 
   // Send the token
   res.status(201).send({ token });
+});
 
-  console.log(users);
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+
+  // Validate the user input
+  const { error } = UserSchema.validate({ username, password });
+  if (error) return res.status(400).send(error.message);
+
+  // Check if the user exists
+  const user = users.find((u) => u.username === username);
+  if (!user) {
+    return res.status(404).send({
+      error: {
+        message: "Invalid username or password",
+        code: 400,
+      },
+    });
+  }
+
+  // Check if the password is correct
+  if (user.password !== password) {
+    return res.status(401).send({
+      error: {
+        message: "Invalid username or password",
+        code: 400,
+      },
+    });
+  }
+
+  // Generate a token
+  const token = jwt.sign({ username: user.username }, __JWT_SECRET__, {
+    expiresIn: "7d",
+  });
+
+  // Send the token
+  res.status(200).send({ token });
 });
 
 app.listen(5000, () => {
