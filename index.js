@@ -1,6 +1,7 @@
 const express = require("express");
 const Joi = require("joi");
 const jwt = require("jsonwebtoken");
+const morgan = require("morgan");
 
 const __JWT_SECRET__ = "insecure-defined-here";
 
@@ -29,6 +30,7 @@ const users = [
 
 const app = express();
 app.use(express.json());
+app.use(morgan("dev"));
 
 app.post("/register", (req, res) => {
   const { username, password } = req.body;
